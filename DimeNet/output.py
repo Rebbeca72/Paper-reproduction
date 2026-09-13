@@ -20,15 +20,11 @@ class OutputBlock(nn.Module):
         super().__init__()
 
         self.act = act
-
-        # RBF → hidden dimension
         self.lin_rbf = Linear(
             num_radial,
             hidden_channels,
             bias=False
         )
-
-        # 输出 MLP
         self.lins = nn.ModuleList()
 
         for _ in range(num_layers):
@@ -38,8 +34,6 @@ class OutputBlock(nn.Module):
                     hidden_channels
                 )
             )
-
-        # 最终输出
         self.lin = Linear(
             hidden_channels,
             out_channels,
@@ -78,23 +72,13 @@ class OutputBlock(nn.Module):
         num_nodes
     ):
 
-        # -----------------------------------------
-        # 1. RBF → hidden
-        # -----------------------------------------
 
         rbf = self.lin_rbf(
             rbf
         )
 
-        # -----------------------------------------
-        # 2. edge feature × RBF
-        # -----------------------------------------
-
+   
         x = rbf * x
-
-        # -----------------------------------------
-        # 3. edge → atom
-        # -----------------------------------------
 
         x = scatter(
             x,
@@ -104,19 +88,11 @@ class OutputBlock(nn.Module):
             reduce="sum"
         )
 
-        # -----------------------------------------
-        # 4. atom-level MLP
-        # -----------------------------------------
-
         for layer in self.lins:
 
             x = self.act(
                 layer(x)
             )
-
-        # -----------------------------------------
-        # 5. atom output
-        # -----------------------------------------
 
         x = self.lin(x)
 
