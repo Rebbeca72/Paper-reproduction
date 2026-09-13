@@ -1,33 +1,15 @@
 import torch
 import torch.nn as nn
-
 from torch_geometric.nn import Linear
 from torch_geometric.utils import scatter
-
 from residual import ResidualLayer
 from dimenet_utils import glorot_orthogonal
-
-
+'''把“邻居边的信息 + 三体角度信息”沿着 triplet 进行交互，然后把这些信息重新聚合回当前的边上'''
 class InteractionBlock(nn.Module):
-
-    def __init__(
-        self,
-        hidden_channels,
-        num_radial,
-        num_spherical,
-        num_bilinear,
-        num_before_skip,
-        num_after_skip,
-        act
-    ):
+    def __init__(self,hidden_channels,num_radial,num_spherical,num_bilinear,num_before_skip,num_after_skip,act):
         super().__init__()
-
         self.act = act
-        self.lin_rbf = Linear(
-            num_radial,
-            hidden_channels,
-            bias=False
-        )
+        self.lin_rbf = Linear(num_radial,hidden_channels,bias=False)
         self.lin_sbf = Linear(
             num_spherical * num_radial,
             num_bilinear,
