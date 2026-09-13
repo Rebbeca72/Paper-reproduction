@@ -6,12 +6,6 @@ from dimenet_utils import (
     bessel_basis,
     real_sph_harm
 )
-
-
-# ============================================================
-# Envelope
-# ============================================================
-
 class Envelope(nn.Module):
 
     def __init__(self, exponent=5):
@@ -50,11 +44,6 @@ class Envelope(nn.Module):
 
         return envelope
 
-
-# ============================================================
-# Bessel Basis Layer
-# ============================================================
-
 class BesselBasisLayer(nn.Module):
 
     def __init__(
@@ -92,59 +81,12 @@ class BesselBasisLayer(nn.Module):
 
     def forward(self, dist):
 
-        # ----------------------------------------------------
-        # dist:
-        # [E]
-        #
-        # E = number of edges
-        # ----------------------------------------------------
-
         dist = dist / self.cutoff
-
-        # ----------------------------------------------------
-        # Envelope
-        #
-        # [E]
-        # ----------------------------------------------------
-
         envelope = self.envelope(dist)
-
-        # ----------------------------------------------------
-        # dist.unsqueeze(-1):
-        #
-        # [E]
-        #     ↓
-        # [E, 1]
-        #
-        # freq:
-        #
-        # [num_radial]
-        # = [6]
-        #
-        # 最终：
-        #
-        # [E, 1] * [6]
-        #     ↓
-        # [E, 6]
-        # ----------------------------------------------------
-
         sinusoid = (
             self.freq * dist.unsqueeze(-1)
         ).sin()
-
-        # ----------------------------------------------------
-        # [E, 1] * [E, 6]
-        #        ↓
-        #      [E, 6]
-        # ----------------------------------------------------
-
         return envelope.unsqueeze(-1) * sinusoid
-
-
-# ============================================================
-# Spherical Basis Layer
-# ============================================================
-
 class SphericalBasisLayer(nn.Module):
 
     def __init__(
@@ -166,20 +108,10 @@ class SphericalBasisLayer(nn.Module):
         self.envelope = Envelope(
             exponent=envelope_exponent
         )
-
-        # ----------------------------------------------------
-        # spherical Bessel functions
-        # ----------------------------------------------------
-
         bessel_forms = bessel_basis(
             num_spherical,
             num_radial
         )
-
-        # ----------------------------------------------------
-        # real spherical harmonics
-        # ----------------------------------------------------
-
         sph_harm_forms = real_sph_harm(
             num_spherical
         )
@@ -196,19 +128,7 @@ class SphericalBasisLayer(nn.Module):
             "sin": torch.sin,
             "cos": torch.cos
         }
-
-        # ====================================================
-        # Generate spherical functions
-        # ====================================================
-
         for i in range(num_spherical):
-
-            # ------------------------------------------------
-            # l = 0
-            #
-            # Y_0^0 = constant
-            # ------------------------------------------------
-
             if i == 0:
 
                 self.sph_funcs.append(
@@ -226,11 +146,6 @@ class SphericalBasisLayer(nn.Module):
                 self.sph_funcs.append(
                     sph
                 )
-
-            # ------------------------------------------------
-            # Generate radial Bessel functions
-            # ------------------------------------------------
-
             for j in range(num_radial):
 
                 bessel = sym.lambdify(
@@ -249,17 +164,7 @@ class SphericalBasisLayer(nn.Module):
         angle,
         idx_kj
     ):
-
-        # ====================================================
-        # 1. Normalize distance
-        # ====================================================
-
         dist = dist / self.cutoff
-
-        # ====================================================
-        # 2. Bessel radial basis
-        # ====================================================
-
         rbf = torch.stack(
             [
                 f(dist)
@@ -267,25 +172,11 @@ class SphericalBasisLayer(nn.Module):
             ],
             dim=1
         )
-
-        # ----------------------------------------------------
-        # rbf:
-        #
-        # [E, num_spherical * num_radial]
-        #
-        # [E, 42]
-        # ----------------------------------------------------
-
         rbf = (
             self.envelope(dist)
             .unsqueeze(-1)
             * rbf
         )
-
-        # ====================================================
-        # 3. Spherical harmonic angular basis
-        # ====================================================
-
         cbf = torch.stack(
             [
                 f(angle)
@@ -293,54 +184,15 @@ class SphericalBasisLayer(nn.Module):
             ],
             dim=1
         )
-
-        # ----------------------------------------------------
-        # cbf:
-        #
-        # [T, num_spherical]
-        #
-        # [T, 7]
-        # ----------------------------------------------------
-
-        # ====================================================
-        # 4. Combine radial + angular basis
-        # ====================================================
-
         n = self.num_spherical
 
         k = self.num_radial
-
-        # ----------------------------------------------------
-        # rbf[idx_kj]
-        #
-        # idx_kj:
-        # [T]
-        #
-        # rbf:
-        # [E, n*k]
-        #
-        # 得到：
-        # [T, n*k]
-        #
-        # reshape：
-        # [T, n, k]
-        # ----------------------------------------------------
-
         out = (
             rbf[idx_kj]
             .view(-1, n, k)
             *
             cbf.view(-1, n, 1)
         )
-
-        # ----------------------------------------------------
-        # [T, n, k]
-        #     ↓
-        # [T, n*k]
-        #
-        # [T, 42]
-        # ----------------------------------------------------
-
         out = out.view(
             -1,
             n * k
