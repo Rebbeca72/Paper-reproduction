@@ -79,17 +79,6 @@ def Jn_zeros(
         ),
         dtype="float32"
     )
-
-    # --------------------------------------------------
-    # l = 0
-    #
-    # j_0(x) = sin(x) / x
-    #
-    # Its zeros are:
-    #
-    # pi, 2pi, 3pi, ...
-    # --------------------------------------------------
-
     zeros[0] = (
         np.arange(
             1,
@@ -97,13 +86,6 @@ def Jn_zeros(
         )
         * np.pi
     )
-
-    # --------------------------------------------------
-    # l > 0
-    #
-    # Find zeros numerically.
-    # --------------------------------------------------
-
     points = (
         np.arange(
             1,
@@ -208,11 +190,6 @@ def bessel_basis(
         num_spherical,
         num_radial
     )
-
-    # --------------------------------------------------
-    # Normalization
-    # --------------------------------------------------
-
     normalizer = []
 
     for order in range(
@@ -243,11 +220,6 @@ def bessel_basis(
         normalizer.append(
             normalizer_tmp
         )
-
-    # --------------------------------------------------
-    # Symbolic spherical Bessel formulas
-    # --------------------------------------------------
-
     formulas = spherical_bessel_formulas(
         num_spherical
     )
@@ -438,11 +410,6 @@ def real_sph_harm(
     theta = sym.symbols(
         "theta"
     )
-
-    # --------------------------------------------------
-    # Convert z -> cos(theta)
-    # --------------------------------------------------
-
     for l in range(L):
 
         for m in range(
@@ -460,11 +427,6 @@ def real_sph_harm(
                         sym.cos(theta)
                     )
                 )
-
-    # --------------------------------------------------
-    # m = 0
-    # --------------------------------------------------
-
     for l in range(L):
 
         Y_l_m[l][0] = sym.simplify(
@@ -475,14 +437,6 @@ def real_sph_harm(
             *
             P_l_m[l][0]
         )
-
-    # --------------------------------------------------
-    # m != 0
-    #
-    # Not used by original DimeNet,
-    # but retained for completeness.
-    # --------------------------------------------------
-
     if not zero_m_only:
 
         phi = sym.symbols(
