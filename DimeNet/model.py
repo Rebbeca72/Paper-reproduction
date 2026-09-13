@@ -37,42 +37,22 @@ class DimeNet(nn.Module):
 
         self.cutoff = cutoff
         self.num_blocks = num_blocks
-
-        # ==========================================
-        # 1. Embedding Block
-        # ==========================================
-
         self.embedding = EmbeddingBlock(
             num_radial=num_radial,
             hidden_channels=hidden_channels,
             act=act
         )
-
-        # ==========================================
-        # 2. Bessel Basis
-        # ==========================================
-
         self.bessel = BesselBasisLayer(
             num_radial=num_radial,
             cutoff=cutoff,
             envelope_exponent=envelope_exponent
         )
-
-        # ==========================================
-        # 3. Spherical Basis
-        # ==========================================
-
         self.spherical_basis = SphericalBasisLayer(
             num_spherical=num_spherical,
             num_radial=num_radial,
             cutoff=cutoff,
             envelope_exponent=envelope_exponent
         )
-
-        # ==========================================
-        # 4. Interaction Blocks
-        # ==========================================
-
         self.interaction_blocks = nn.ModuleList()
 
         for _ in range(num_blocks):
@@ -88,11 +68,6 @@ class DimeNet(nn.Module):
                     act=act
                 )
             )
-
-        # ==========================================
-        # 5. Output Blocks
-        # ==========================================
-
         self.output_blocks = nn.ModuleList()
 
         for _ in range(num_blocks + 1):
@@ -106,11 +81,6 @@ class DimeNet(nn.Module):
                     act=act
                 )
             )
-
-    # =================================================
-    # Forward
-    # =================================================
-
     def forward(
         self,
         z,
@@ -119,38 +89,18 @@ class DimeNet(nn.Module):
     ):
 
         num_nodes = z.size(0)
-
-        # ==========================================
-        # 1. Radius Graph
-        # ==========================================
-
         edge_index = radius_graph(
             pos,
             r=self.cutoff,
             batch=batch,
             loop=False
         )
-
-        # ==========================================
-        # 2. edge index
-        # ==========================================
-
         i, j = edge_index
-
-        # ==========================================
-        # 3. Edge distance
-        # ==========================================
-
         dist = (
             pos[i] - pos[j]
         ).pow(2).sum(
             dim=-1
         ).sqrt()
-
-        # ==========================================
-        # 4. Triplets
-        # ==========================================
-
         (
             i,
             j,
@@ -163,11 +113,6 @@ class DimeNet(nn.Module):
             edge_index,
             num_nodes
         )
-
-        # ==========================================
-        # 5. Angle
-        # ==========================================
-
         pos_ji = (
             pos[idx_j]
             - pos[idx_i]
@@ -196,51 +141,26 @@ class DimeNet(nn.Module):
             b,
             a
         )
-
-        # ==========================================
-        # 6. RBF
-        # ==========================================
-
         rbf = self.bessel(
             dist
         )
-
-        # ==========================================
-        # 7. SBF
-        # ==========================================
-
         sbf = self.spherical_basis(
             dist,
             angle,
             idx_kj
         )
-
-        # ==========================================
-        # 8. Embedding
-        # ==========================================
-
         x = self.embedding(
             z,
             rbf,
             i,
             j
         )
-
-        # ==========================================
-        # 9. Output Block 0
-        # ==========================================
-
         output = self.output_blocks[0](
             x,
             rbf,
             i,
             num_nodes
         )
-
-        # ==========================================
-        # 10. Interaction Blocks
-        # ==========================================
-
         for interaction_block, output_block in zip(
             self.interaction_blocks,
             self.output_blocks[1:]
@@ -263,11 +183,6 @@ class DimeNet(nn.Module):
                     num_nodes
                 )
             )
-
-        # ==========================================
-        # 11. Atom → Molecule
-        # ==========================================
-
         output = global_add_pool(
             output,
             batch
